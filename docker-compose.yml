@@ -29,7 +29,7 @@ services:
                 -Dshare.host=127.0.0.1
                 -Dshare.port=8080
                 -Dalfresco.host=localhost
-                -Dalfresco.port=8080
+                -Dalfresco.port=8081
                 -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
                 -Dmessaging.broker.url=\"failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true\"
                 -Ddeployment.method=DOCKER_COMPOSE
@@ -38,7 +38,9 @@ services:
                 -Dcsrf.filter.enabled=false
                 -Dalfresco.restApi.basicAuthScheme=true
                 -Xms1500m -Xmx1500m
-                " 
+                "
+        ports:
+            - 8081:8080
 
     solr6:
         build:
@@ -61,22 +63,21 @@ services:
             SOLR_SOLR_PORT: "8983"
             #Create the default alfresco and archive cores
             SOLR_CREATE_ALFRESCO_DEFAULTS: "alfresco,archive"
-            SOLR_JAVA_MEM: "-Xms2g -Xmx2g" 
+            SOLR_JAVA_MEM: "-Xms2g -Xmx2g"
         ports:
-            - 8083:8983 
+            - 8083:8983
 
-    
     solr6secondary:
         build:
           context: ./search
           args:
             SEARCH_TAG: ${SEARCH_CE_TAG}
             SOLR_HOSTNAME: solr6secondary
-            ALFRESCO_HOSTNAME: alfresco 
-            ALFRESCO_COMMS: none   
+            ALFRESCO_HOSTNAME: alfresco
+            ALFRESCO_COMMS: none
             ENABLE_SHARDING: "true"
             NUM_SHARDS: "2"
-            SHARD_ID: "1" 
+            SHARD_ID: "1"
         mem_limit: 2500m
         environment:
             #Solr needs to know how to register itself with Alfresco
@@ -87,12 +88,9 @@ services:
             SOLR_SOLR_PORT: "8983"
             #Create the default alfresco and archive cores
             SOLR_CREATE_ALFRESCO_DEFAULTS: "alfresco,archive"
-            SOLR_JAVA_MEM: "-Xms2g -Xmx2g" 
+            SOLR_JAVA_MEM: "-Xms2g -Xmx2g"
         ports:
-            - 8084:8983  
-    
-
-    
+            - 8084:8983
 
     transform-router:
         mem_limit: 512m
@@ -182,6 +180,8 @@ services:
                 -Dalfresco.context=alfresco
                 -Dalfresco.protocol=http
                 "
+        ports:
+            - 8080:8080
 
     postgres:
         image: postgres:${POSTGRES_TAG}
@@ -202,25 +202,6 @@ services:
             - 5672:5672 # AMQP
             - 61616:61616 # OpenWire
             - 61613:61613 # STOMP
-
-    digital-workspace:
-        image: quay.io/alfresco/alfresco-digital-workspace:${DIGITAL_WORKSPACE_TAG}
-        mem_limit: 128m
-        environment:
-            BASEPATH: ./
-
-    proxy:
-        image: quay.io/alfresco/alfresco-acs-nginx:${ACS_NGINX_TAG}
-        mem_limit: 128m
-        depends_on:
-            - alfresco
-            - digital-workspace
-        ports:
-            - 8080:8080
-        links:
-            - digital-workspace
-            - alfresco
-            - share
 
 volumes:
     shared-file-store-volume:
